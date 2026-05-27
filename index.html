@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Pizza Analytics</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ff6b00">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pizza CFO">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fire: #ff6b00; --ember: #ff9a3c; --gold: #ffd166;
+    --bg: #080810; --surface: #111118; --surface2: #1a1a24;
+    --border: rgba(255,107,0,0.15); --text: #e8e0d5; --muted: #6b6570;
+    --green: #06d6a0; --red: #ef476f;
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: rgba(255,107,0,0.3); border-radius: 2px; }
+  #keyscreen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+    background: radial-gradient(ellipse at 30% 20%, rgba(255,107,0,0.08), transparent 60%), var(--bg); }
+  .key-card { width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:32px 24px; }
+  .logo-wrap { text-align:center; margin-bottom:28px; }
+  .pizza-icon { font-size:52px; display:block; margin-bottom:10px; animation:float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .app-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:900; color:var(--fire); letter-spacing:1px; }
+  .app-sub { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,107,0,0.4); letter-spacing:3px; margin-top:4px; }
+  .key-label { font-size:14px; font-weight:700; color:var(--ember); margin-bottom:4px; }
+  .key-hint { font-size:11px; color:var(--muted); margin-bottom:16px; line-height:1.5; }
+  .key-hint a { color:var(--fire); text-decoration:none; }
+  .input-wrap { position:relative; margin-bottom:14px; }
+  .key-input { width:100%; padding:13px 44px 13px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,107,0,0.2); border-radius:10px; color:var(--text); font-family:'Space Mono',monospace; font-size:12px; outline:none; }
+  .key-input:focus { border-color:rgba(255,107,0,0.5); }
+  .toggle-btn { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:16px; }
+  .start-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--fire),#cc3300); border:none; border-radius:10px; color:#fff; font-size:15px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; box-shadow:0 4px 20px rgba(255,107,0,0.3); }
+  .start-btn:active { transform:scale(0.98); }
+  .security-note { margin-top:14px; padding:10px 12px; background:rgba(255,107,0,0.04); border:1px solid rgba(255,107,0,0.1); border-radius:8px; font-size:11px; color:var(--muted); line-height:1.5; }
+  #app { display:none; flex-direction:column; height:100vh; }
+  #app.visible { display:flex; }
+  .header { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:rgba(8,8,16,0.95); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+  .header-left { display:flex; align-items:center; gap:10px; }
+  .header-pizza { font-size:26px; }
+  .header-title { font-family:'Playfair Display',serif; font-size:16px; font-weight:900; color:var(--fire); line-height:1; }
+  .header-sub { font-family:'Space Mono',monospace; font-size:8px; color:rgba(255,107,0,0.4); letter-spacing:2px; margin-top:2px; }
+  .header-right { display:flex; gap:8px; }
+  .hbtn { padding:7px 12px; border-radius:20px; border:1px solid rgba(255,107,0,0.3); background:rgba(255,107,0,0.08); color:var(--ember); font-size:12px; cursor:pointer; }
+  .hbtn.active { background:rgba(255,107,0,0.25); }
+  .tabbar { flex-shrink:0; display:flex; overflow-x:auto; gap:6px; padding:10px 12px; background:var(--surface); border-bottom:1px solid var(--border); scrollbar-width:none; }
+  .tabbar::-webkit-scrollbar { display:none; }
+  .tab { flex-shrink:0; padding:8px 14px; border-radius:20px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:var(--muted); font-size:12px; font-family:'DM Sans',sans-serif; font-weight:600; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:5px; }
+  .tab.active { background:rgba(255,107,0,0.15); border-color:rgba(255,107,0,0.4); color:var(--fire); }
+  .tab .done { font-size:8px; color:var(--green); }
+  .content { flex:1; overflow-y:auto; }
+  .empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:40px 24px; text-align:center; gap:16px; }
+  .empty-icon { font-size:56px; opacity:0.6; }
+  .empty-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--fire); }
+  .empty-sub { font-size:13px; color:var(--muted); max-width:280px; line-height:1.6; }
+  .analyze-btn { padding:14px 28px; background:linear-gradient(135deg,var(--fire),#cc3300); border:none; border-radius:50px; color:#fff; font-size:15px; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; box-shadow:0 4px 20px rgba(255,107,0,0.3); }
+  .analyze-btn:active { transform:scale(0.97); }
+  .loading { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:14px; }
+  .spin { font-size:44px; animation:spin 1s linear infinite; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .loading-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--fire); }
+  .loading-sub { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); }
+  .result { padding:16px; max-width:800px; margin:0 auto; }
+  .result-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 16px; }
+  .reanalyze-btn { margin-top:12px; padding:8px 16px; float:right; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:var(--muted); font-size:12px; cursor:pointer; }
+  .md h2 { font-family:'Playfair Display',serif; font-size:18px; color:var(--fire); margin:18px 0 8px; }
+  .md h3 { font-size:14px; color:var(--ember); margin:14px 0 6px; font-weight:700; }
+  .md p { font-size:13px; color:#c8c0bb; line-height:1.65; margin:5px 0; }
+  .md strong { color:var(--ember); }
+  .md .list-item { display:flex; gap:8px; margin:4px 0; padding-left:4px; }
+  .md .list-bullet { color:var(--fire); flex-shrink:0; }
+  .md .list-text { font-size:13px; color:#c0b8b3; line-height:1.5; }
+  .md .num-item { display:flex; gap:8px; margin:5px 0; }
+  .md .num { color:var(--fire); flex-shrink:0; font-weight:700; font-size:12px; min-width:18px; }
+  .md .badge { display:inline-block; margin:10px 0 5px; padding:6px 10px; border-radius:0 6px 6px 0; font-weight:700; font-size:13px; border-left:3px solid; }
+  .md .badge.orange { background:rgba(255,107,0,0.08); border-color:var(--fire); color:var(--ember); }
+  .md .badge.red { background:rgba(239,71,111,0.08); border-color:var(--red); color:var(--red); }
+  .md .badge.yellow { background:rgba(255,209,102,0.08); border-color:var(--gold); color:var(--gold); }
+  .md .badge.green { background:rgba(6,214,160,0.08); border-color:var(--green); color:var(--green); }
+  .md hr { border:none; border-top:1px solid rgba(255,107,0,0.15); margin:14px 0; }
+  .md .spacer { height:5px; }
+  .tbl-wrap { overflow-x:auto; margin:10px 0; border-radius:10px; border:1px solid rgba(255,107,0,0.12); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:rgba(255,107,0,0.12); padding:8px 10px; text-align:left; color:var(--ember); font-family:'Space Mono',monospace; font-size:11px; white-space:nowrap; border-bottom:1px solid rgba(255,107,0,0.2); }
+  td { padding:7px 10px; font-family:'Space Mono',monospace; font-size:11px; border-bottom:1px solid rgba(255,255,255,0.04); white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  td.neg { color:var(--red); } td.pos { color:var(--green); } td.neu { color:#c0b8b3; }
+  .chat-panel { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); display:flex; flex-direction:column; max-height:70vh; transform:translateY(100%); transition:transform 0.3s ease; z-index:200; border-radius:20px 20px 0 0; }
+  .chat-panel.open { transform:translateY(0); }
+  .chat-handle { text-align:center; padding:10px; cursor:pointer; }
+  .chat-handle-bar { width:36px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; display:inline-block; }
+  .chat-header { padding:4px 16px 12px; display:flex; align-items:center; gap:8px; border-bottom:1px solid rgba(255,107,0,0.1); }
+  .chat-header-title { font-size:14px; font-weight:700; color:var(--ember); }
+  .chat-header-sub { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,107,0,0.4); }
+  .chat-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; min-height:120px; }
+  .chat-empty { color:var(--muted); font-size:12px; text-align:center; margin-top:16px; line-height:1.6; }
+  .msg { display:flex; }
+  .msg.user { justify-content:flex-end; }
+  .msg-bubble { max-width:88%; padding:10px 13px; font-size:13px; line-height:1.5; border-radius:14px; }
+  .msg.user .msg-bubble { background:rgba(255,107,0,0.18); border:1px solid rgba(255,107,0,0.3); color:var(--gold); border-radius:14px 14px 4px 14px; }
+  .msg.assistant .msg-bubble { background:var(--surface2); border:1px solid rgba(255,255,255,0.06); border-radius:14px 14px 14px 4px; }
+  .typing { display:flex; gap:5px; padding:10px 13px; background:var(--surface2); border:1px solid rgba(255,255,255,0.06); border-radius:14px 14px 14px 4px; width:fit-content; }
+  .dot { width:6px; height:6px; background:var(--fire); border-radius:50%; animation:bounce 1s ease-in-out infinite; }
+  .dot:nth-child(2){animation-delay:0.15s} .dot:nth-child(3){animation-delay:0.3s}
+  @keyframes bounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-4px);opacity:1} }
+  .chat-input-row { padding:10px 12px; display:flex; gap:8px; border-top:1px solid rgba(255,107,0,0.08); }
+  .chat-input { flex:1; padding:10px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,107,0,0.2); border-radius:10px; color:var(--text); font-size:13px; font-family:'DM Sans',sans-serif; outline:none; }
+  .send-btn { padding:10px 16px; background:linear-gradient(135deg,var(--fire),#cc3300); border:none; border-radius:10px; color:#fff; font-size:15px; cursor:pointer; }
+  .send-btn:disabled { opacity:0.4; }
+  .chips { display:flex; gap:6px; padding:0 12px 8px; flex-wrap:wrap; }
+  .chip { padding:5px 10px; background:rgba(255,107,0,0.06); border:1px solid rgba(255,107,0,0.18); border-radius:12px; color:rgba(255,107,0,0.6); font-size:10px; cursor:pointer; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:199; display:none; }
+  .overlay.show { display:block; }
+</style>
+</head>
+<body>
+
+<div id="keyscreen">
+  <div class="key-card">
+    <div class="logo-wrap">
+      <span class="pizza-icon">🍕</span>
+      <div class="app-title">SMART PIZZA ANALYTICS</div>
+      <div class="app-sub">RETO EMPRESARIAL · 90 DÍAS</div>
+    </div>
+    <div class="key-label">🔑 Ingresa tu API Key</div>
+    <div class="key-hint">Obtén tu key en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → Settings → API Keys</div>
+    <div class="input-wrap">
+      <input class="key-input" id="keyInput" type="password" placeholder="sk-ant-api03-..." />
+      <button class="toggle-btn" onclick="toggleKey()">👁️</button>
+    </div>
+    <button class="start-btn" onclick="startApp()">🚀 Iniciar Análisis</button>
+    <div class="security-note">⚠️ Tu key solo se usa en esta sesión y nunca se almacena.</div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="header">
+    <div class="header-left">
+      <span class="header-pizza">🍕</span>
+      <div>
+        <div class="header-title">SMART PIZZA ANALYTICS</div>
+        <div class="header-sub">RETO EMPRESARIAL · 90 DÍAS</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="hbtn" id="chatToggleBtn" onclick="toggleChat()">💬 CFO</button>
+      <button class="hbtn" onclick="resetKey()" style="font-size:11px">🔑</button>
+    </div>
+  </header>
+  <div class="tabbar" id="tabbar"></div>
+  <div class="content" id="content"></div>
+</div>
+
+<div class="overlay" id="overlay" onclick="toggleChat()"></div>
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-handle" onclick="toggleChat()"><span class="chat-handle-bar"></span></div>
+  <div class="chat-header">
+    <span style="font-size:20px">🤖</span>
+    <div>
+      <div class="chat-header-title">Consultor CFO</div>
+      <div class="chat-header-sub">Pregunta lo que quieras</div>
+    </div>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-empty">💬 Pregunta sobre flujo de caja, decisiones estratégicas o cualquier quincena.</div>
+  </div>
+  <div class="chips">
+    <span class="chip" onclick="setChip('¿Cuánto pedir prestado en Mes 1?')">💰 Préstamo</span>
+    <span class="chip" onclick="setChip('¿Conviene contratar en Mes 2?')">👥 RRHH</span>
+    <span class="chip" onclick="setChip('¿Hay riesgo de quiebra?')">🚨 Quiebra</span>
+    <span class="chip" onclick="setChip('¿La empresa sobrevive los 90 días?')">🏆 Final</span>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')sendChat()" />
+    <button class="send-btn" id="sendBtn" onclick="sendChat()">▶</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `Eres Smart Pizza Analytics, agente CFO de una pizzería en reto de 90 días. Datos: Capital $400,000 MXN, Banco $250,000, Activos $150,000. Precio venta $350 (sube a $470 Mes3Q2). Costo insumo $120 (sube a $210 Mes3Q2). Gastos fijos $40,000/mes. 8 empleados. QUIEBRA si saldo ≤$0. Préstamos al 60% anual (2.5% quincenal). Responde en español con tablas markdown.`;
+
+const PERIODS = [
+  {id:'intro',label:'🏁 Inicio',prompt:'Diagnóstico financiero inicial de la pizzería antes del reto 90 días. Ratios de liquidez, riesgos y estrategia de entrada.'},
+  {id:'m1q1',label:'🔴 Mes1·Q1',prompt:'MES 1 QUINCENA 1. Ventas: 300 servicios x $350. Día 15: multa+remodelación $180,000 urgente. Efectivo ~$250,000. Calcula préstamo necesario (60% anual), flujo de caja completo y decisión óptima.'},
+  {id:'m1q2',label:'🟠 Mes1·Q2',prompt:'MES 1 QUINCENA 2. Ventas: 350 servicios. Intereses del préstamo Q1 (2.5% quincenal). Flujo completo. ¿Se recupera la empresa?'},
+  {id:'m2q1',label:'🟡 Mes2·Q1',prompt:'MES 2 QUINCENA 1. Ventas: 200. Día 10: 4 empleados renuncian, 4 restantes piden $8,500/mes c/u, renta sube a $18,000. DECISIÓN: ¿contratar 4 nuevos (Q2=250 ventas) o quedarse con 4 (Q2=125 ventas)? Costo-beneficio de ambas opciones. Convocatoria Pizzero Senior si contratan.'},
+  {id:'m2q2',label:'🟢 Mes2·Q2',prompt:'MES 2 QUINCENA 2. Ventas: 250 (equipo completo) o 125 (4 empleados). Impacto decisión RRHH. Proyección Mes 3.'},
+  {id:'m3q1',label:'🔵 Mes3·Q1',prompt:'MES 3 QUINCENA 1. Ventas: 500. Día 16: plaga destruye inventario, pérdida directa $65,000. Escasez trigo: costo insumo sube a $210 desde Q2. Flujo completo y estrategias emergencia.'},
+  {id:'m3q2',label:'🏆 Mes3·Q2',prompt:'MES 3 QUINCENA 2 FINAL. Ventas: 400. Precio $470. Costo insumo $210. VEREDICTO: ¿sobrevivió la pizzería 90 días? Balance final completo.'},
+];
+
+let apiKey='', responses={}, activePeriod='intro', chatHistory=[], chatOpen=false;
+
+function toggleKey(){const i=document.getElementById('keyInput');i.type=i.type==='password'?'text':'password';}
+function setChip(q){document.getElementById('chatInput').value=q;}
+
+function startApp(){
+  const v=document.getElementById('keyInput').value.trim();
+  if(!v.startsWith('sk-ant-')){alert('La key debe empezar con sk-ant-\nVerifica que la copiaste completa.');return;}
+  apiKey=v;
+  document.getElementById('keyscreen').style.display='none';
+  document.getElementById('app').classList.add('visible');
+  buildTabs(); showPeriod('intro');
+}
+
+function resetKey(){
+  apiKey=''; responses={}; chatHistory=[];
+  document.getElementById('keyscreen').style.display='flex';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('keyInput').value='';
+}
+
+function buildTabs(){
+  const bar=document.getElementById('tabbar'); bar.innerHTML='';
+  PERIODS.forEach(p=>{
+    const b=document.createElement('button');
+    b.className='tab'+(p.id===activePeriod?' active':'');
+    b.id='tab-'+p.id;
+    b.innerHTML=p.label+(responses[p.id]?' <span class="done">✓</span>':'');
+    b.onclick=()=>showPeriod(p.id);
+    bar.appendChild(b);
+  });
+}
+
+function showPeriod(id){
+  activePeriod=id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const tab=document.getElementById('tab-'+id);
+  if(tab){tab.classList.add('active');tab.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+  renderContent();
+}
+
+function renderContent(){
+  const c=document.getElementById('content');
+  const p=PERIODS.find(x=>x.id===activePeriod);
+  if(!p)return;
+  if(responses[activePeriod]){
+    c.innerHTML=`<div class="result"><div class="result-card md" id="mdContent"></div><button class="reanalyze-btn" onclick="reanalyze()">🔄 Re-analizar</button><div style="clear:both;height:16px"></div></div>`;
+    document.getElementById('mdContent').innerHTML=renderMD(responses[activePeriod]);
+    return;
+  }
+  c.innerHTML=`<div class="empty"><div class="empty-icon">${p.label.split(' ')[0]}</div><div class="empty-title">${p.label.replace(/^[^\s]+\s/,'')}</div><div class="empty-sub">Analiza este período con inteligencia artificial</div><button class="analyze-btn" onclick="analyze('${activePeriod}')">🔍 Analizar período</button></div>`;
+}
+
+function reanalyze(){delete responses[activePeriod];buildTabs();renderContent();analyze(activePeriod);}
+
+async function callAPI(messages){
+  const res=await fetch('/.netlify/functions/chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages,system:SYSTEM_PROMPT,apiKey})
+  });
+  const data=await res.json();
+  if(data.error)throw new Error(typeof data.error==='object'?data.error.message:data.error);
+  return (data.content||[]).map(b=>b.text||'').join('\n');
+}
+
+async function analyze(id){
+  const p=PERIODS.find(x=>x.id===id);
+  if(!p)return;
+  const c=document.getElementById('content');
+  c.innerHTML=`<div class="loading"><div class="spin">🍕</div><div class="loading-title">Analizando datos...</div><div class="loading-sub">CFO en proceso · Por favor espera</div></div>`;
+  try{
+    const text=await callAPI([{role:'user',content:p.prompt}]);
+    responses[id]=text; buildTabs(); renderContent();
+  }catch(e){
+    c.innerHTML=`<div class="empty"><div class="empty-icon">❌</div><div class="empty-title">Error</div><div class="empty-sub">${e.message||'Error de conexión'}</div><button class="analyze-btn" onclick="analyze('${id}')">🔄 Reintentar</button></div>`;
+  }
+}
+
+function renderMD(text){
+  const lines=text.split('\n');let html='';let i=0;
+  while(i<lines.length){
+    const line=lines[i];
+    if(line.trim().startsWith('|')&&lines[i+1]?.trim().startsWith('|---')){
+      const headers=line.trim().split('|').filter(Boolean).map(h=>h.trim());
+      i+=2; let rows=[];
+      while(i<lines.length&&lines[i].trim().startsWith('|')){rows.push(lines[i].trim().split('|').filter(Boolean).map(c=>c.trim()));i++;}
+      html+='<div class="tbl-wrap"><table><thead><tr>';
+      headers.forEach(h=>html+=`<th>${h}</th>`);
+      html+='</tr></thead><tbody>';
+      rows.forEach(row=>{html+='<tr>';row.forEach(cell=>{const cls=(cell.includes('-')&&cell.includes('$'))?'neg':(cell.startsWith('+')||cell.includes('POSITIVO')||cell.includes('VERDE'))?'pos':'neu';html+=`<td class="${cls}">${cell}</td>`;});html+='</tr>';});
+      html+='</tbody></table></div>';continue;
+    }
+    if(line.startsWith('## '))html+=`<h2>${esc(line.slice(3))}</h2>`;
+    else if(line.startsWith('### '))html+=`<h3>${esc(line.slice(4))}</h3>`;
+    else if(/^\*\*[^*]+\*\*$/.test(line.trim())){
+      const t=line.replace(/\*\*/g,'');
+      const cls=t.includes('CRÍTICO')||t.includes('ALTO')?'red':t.includes('MEDIO')?'yellow':t.includes('BAJO')?'green':'orange';
+      html+=`<div class="badge ${cls}">${esc(t)}</div>`;
+    }
+    else if(/^[\*\-] /.test(line))html+=`<div class="list-item"><span class="list-bullet">▸</span><span class="list-text">${fmt(line.replace(/^[\*\-] /,''))}</span></div>`;
+    else if(/^\d+\. /.test(line)){const n=line.match(/^(\d+)\./)[1];html+=`<div class="num-item"><span class="num">${n}.</span><span class="list-text">${fmt(line.replace(/^\d+\. /,''))}</span></div>`;}
+    else if(line.trim()==='---')html+='<hr>';
+    else if(line.trim())html+=`<p>${fmt(line)}</p>`;
+    else html+='<div class="spacer"></div>';
+    i++;
+  }
+  return html;
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(s){return esc(s).replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code style="background:rgba(255,107,0,0.1);padding:1px 4px;border-radius:3px;font-family:Space Mono,monospace;font-size:11px">$1</code>');}
+
+function toggleChat(){
+  chatOpen=!chatOpen;
+  document.getElementById('chatPanel').classList.toggle('open',chatOpen);
+  document.getElementById('overlay').classList.toggle('show',chatOpen);
+  document.getElementById('chatToggleBtn').classList.toggle('active',chatOpen);
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const q=inp.value.trim(); if(!q)return;
+  inp.value='';
+  chatHistory.push({role:'user',content:q});
+  renderChat();
+  document.getElementById('sendBtn').disabled=true;
+  const msgs=document.getElementById('chatMessages');
+  const typing=document.createElement('div');typing.className='typing';typing.id='typing';
+  typing.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;
+  try{
+    const text=await callAPI(chatHistory.map(m=>({role:m.role,content:m.content})));
+    chatHistory.push({role:'assistant',content:text});
+  }catch(e){chatHistory.push({role:'assistant',content:'❌ '+(e.message||'Error')});}
+  document.getElementById('typing')?.remove();
+  document.getElementById('sendBtn').disabled=false;
+  renderChat();
+}
+
+function renderChat(){
+  const msgs=document.getElementById('chatMessages');
+  if(chatHistory.length===0){msgs.innerHTML='<div class="chat-empty">💬 Pregunta sobre flujo de caja, decisiones estratégicas o cualquier quincena.</div>';return;}
+  msgs.innerHTML='';
+  chatHistory.forEach(m=>{
+    const div=document.createElement('div');div.className='msg '+m.role;
+    const bubble=document.createElement('div');bubble.className='msg-bubble';
+    if(m.role==='assistant')bubble.innerHTML='<div class="md">'+renderMD(m.content)+'</div>';
+    else bubble.textContent=m.content;
+    div.appendChild(bubble);msgs.appendChild(div);
+  });
+  msgs.scrollTop=msgs.scrollHeight;
+}
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
